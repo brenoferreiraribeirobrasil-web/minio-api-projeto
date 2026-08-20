@@ -1,0 +1,16 @@
+### Verificar se a API está rodando
+GET http://localhost:3000/
+
+### Listar arquivos do bucket
+GET http://localhost:3000/files
+
+### Upload de um arquivo (ajuste o caminho no VS Code REST Client)
+# Para testar upload, use o Postman/Insomnia com form-data,
+# pois o REST Client do VS Code tem suporte limitado a multipart/form-data.
+# Exemplo de campo: file = (selecionar arquivo)
+
+### Baixar um arquivo específico (troque pela key retornada no upload)
+GET http://localhost:3000/files/NOME_DA_KEY_AQUI
+
+### Deletar um arquivo específico (troque pela key retornada no upload)
+DELETE http://localhost:3000/files/NOME_DA_KEY_AQUI

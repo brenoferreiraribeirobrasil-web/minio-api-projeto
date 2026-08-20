@@ -1,0 +1,21 @@
+{
+  "name": "api-node-minio",
+  "version": "1.0.0",
+  "description": "API em Node.js para armazenar e listar arquivos usando MinIO (compatível com AWS S3)",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.588.0",
+    "@aws-sdk/lib-storage": "^3.588.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
