@@ -5,6 +5,7 @@ const {
   ListObjectsV2Command,
   GetObjectCommand,
   DeleteObjectCommand,
+  HeadObjectCommand
 } = require("@aws-sdk/client-s3");
 const s3Client = require("../s3Client");
 require("dotenv").config();
@@ -51,11 +52,23 @@ router.get("/", async (req, res) => {
       new ListObjectsV2Command({ Bucket: bucketName })
     );
 
-    const files = (data.Contents || []).map((item) => ({
+   const files = await Promise.all(
+  (data.Contents || []).map(async (item) => {
+    const metadata = await s3Client.send(
+      new HeadObjectCommand({
+        Bucket: bucketName,
+        Key: item.Key,
+      })
+    );
+
+    return {
       key: item.Key,
       size: item.Size,
       lastModified: item.LastModified,
-    }));
+      contentType: metadata.ContentType,
+    };
+  })
+);
 
     return res.json({ bucket: bucketName, total: files.length, files });
   } catch (err) {
