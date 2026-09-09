@@ -1,77 +1,268 @@
-# API Node.js + MinIO (Armazenamento de Objetos)
+# API REST com Node.js e MinIO
 
-API que armazena e lista arquivos usando o conceito de object storage, com o **MinIO** rodando via Docker simulando o **AWS S3** localmente.
+Projeto desenvolvido para demonstrar, na prática, o funcionamento do armazenamento de objetos (Object Storage).
 
-## Stack
+A aplicação consiste em uma API REST desenvolvida com Node.js e Express, integrada ao MinIO por meio do AWS SDK para JavaScript. Todo o ambiente pode ser executado localmente utilizando Docker e Docker Compose.
 
-- Node.js + Express
-- Multer (upload de arquivos)
-- AWS SDK v3 (`@aws-sdk/client-s3`) — compatível com MinIO
-- MinIO (Docker)
+## Tecnologias utilizadas
 
-## Passo a passo
+- Node.js
+- Express
+- Multer
+- AWS SDK v3 (`@aws-sdk/client-s3`)
+- MinIO
+- Docker
+- Docker Compose
 
-### 1. Subir o MinIO com Docker
+## Funcionalidades
+
+A API permite:
+
+- Enviar arquivos para o MinIO
+- Listar os arquivos armazenados
+- Consultar nome, tamanho, data de modificação e Content-Type
+- Visualizar ou baixar um arquivo
+- Remover arquivos
+- Criar automaticamente o bucket configurado caso ele ainda não exista
+
+## Estrutura do projeto
+
+```text
+minio-api-project/
+├── src/
+│   ├── routes/
+│   │   ├── files.js
+│   │   └── upload.js
+│   ├── ensureBucket.js
+│   ├── s3Client.js
+│   └── server.js
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── Dockerfile
+├── package.json
+├── package-lock.json
+├── README.md
+└── requests.http
+```
+
+## Configuração
+
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/brenoferreiraribeirobrasil-web/minio-api-projeto.git
+cd minio-api-projeto
+```
+
+### 2. Configurar as variáveis de ambiente
+
+Crie um arquivo `.env` baseado no `.env.example`.
+
+Exemplo:
+
+```env
+PORT=3000
+
+MINIO_API_PORT=9000
+MINIO_CONSOLE_PORT=9001
+
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin123
+MINIO_BUCKET=arquivos
+MINIO_REGION=us-east-1
+```
+
+O arquivo `.env` não deve ser enviado ao GitHub.
+
+### 3. Subir o ambiente com Docker
+
+Execute:
+
+```bash
+docker compose up -d --build
+```
+
+Esse comando inicia a API Node.js e o servidor MinIO.
+
+Para verificar os containers:
+
+```bash
+docker compose ps
+```
+
+## Serviços
+
+Após iniciar o ambiente:
+
+| Serviço | Endereço |
+|---|---|
+| API Node.js | `http://localhost:3000` |
+| API MinIO | `http://localhost:9000` |
+| Console MinIO | `http://localhost:9001` |
+
+O bucket configurado em `MINIO_BUCKET` é criado automaticamente caso ainda não exista.
+
+## Endpoints
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/` | Verifica se a API está funcionando |
+| POST | `/upload` | Envia um arquivo para o MinIO |
+| GET | `/files` | Lista os arquivos armazenados |
+| GET | `/files/:key` | Visualiza ou baixa um arquivo |
+| DELETE | `/files/:key` | Remove um arquivo |
+
+## Upload de arquivo
+
+O endpoint:
+
+```text
+POST /upload
+```
+
+recebe arquivos utilizando `multipart/form-data`.
+
+O campo deve possuir o nome:
+
+```text
+file
+```
+
+Exemplo utilizando curl:
+
+```bash
+curl -X POST http://localhost:3000/upload -F "file=@caminho/arquivo.jpg"
+```
+
+Exemplo de resposta:
+
+```json
+{
+  "message": "Arquivo enviado com sucesso.",
+  "filename": "arquivo-gerado.jpg",
+  "bucket": "arquivos",
+  "contentType": "image/jpeg",
+  "size": 338815
+}
+```
+
+## Listagem de arquivos
+
+Para listar os objetos armazenados:
+
+```text
+GET /files
+```
+
+A resposta apresenta informações como:
+
+- chave/nome do objeto
+- tamanho
+- data da última modificação
+- Content-Type
+
+Exemplo:
+
+```json
+{
+  "bucket": "arquivos",
+  "total": 1,
+  "files": [
+    {
+      "key": "arquivo.jpg",
+      "size": 338815,
+      "lastModified": "2026-09-09T03:32:57.411Z",
+      "contentType": "image/jpeg"
+    }
+  ]
+}
+```
+
+## Recuperação de arquivo
+
+Para visualizar ou baixar um arquivo:
+
+```text
+GET /files/:key
+```
+
+Exemplo:
+
+```text
+GET /files/arquivo.jpg
+```
+
+A API recupera o objeto armazenado no MinIO e envia o Content-Type correspondente na resposta HTTP.
+
+## Remoção de arquivo
+
+Para remover um objeto:
+
+```text
+DELETE /files/:key
+```
+
+## Testes
+
+As rotas podem ser testadas utilizando:
+
+- REST Client do VS Code
+- Postman
+- Insomnia
+- curl
+
+O projeto também possui o arquivo:
+
+```text
+requests.http
+```
+
+com requisições utilizadas para testar a API.
+
+## Persistência dos dados
+
+O MinIO utiliza um volume Docker:
+
+```text
+minio_data
+```
+
+Dessa forma, os objetos armazenados não são perdidos simplesmente ao parar e iniciar novamente os containers.
+
+## Encerrar o ambiente
+
+Para parar os containers:
+
+```bash
+docker compose down
+```
+
+Para iniciar novamente:
 
 ```bash
 docker compose up -d
 ```
 
-Isso sobe:
-- API do MinIO em `http://localhost:9000`
-- Console Web em `http://localhost:9001` (login: `minioadmin` / `minioadmin123`)
+## Arquitetura
 
-### 2. Instalar as dependências
+O fluxo principal da aplicação é:
 
-```bash
-npm install
+```text
+Cliente
+   |
+   | HTTP
+   v
+API REST - Node.js / Express
+   |
+   | AWS SDK / S3 API
+   v
+MinIO
+   |
+   v
+Volume Docker
 ```
 
-### 3. Configurar variáveis de ambiente
-
-Copie o arquivo de exemplo:
-
-```bash
-cp .env.example .env
-```
-
-(No Windows: `copy .env.example .env`)
-
-### 4. Rodar a API
-
-```bash
-npm run dev
-```
-
-A API sobe em `http://localhost:3000`. O bucket configurado no `.env` (`meus-arquivos`) é criado automaticamente se ainda não existir.
-
-## Endpoints
-
-| Método | Rota            | Descrição                          |
-|--------|-----------------|-------------------------------------|
-| GET    | `/`             | Verifica se a API está rodando      |
-| POST   | `/files/upload` | Envia um arquivo (campo `file`)     |
-| GET    | `/files`        | Lista todos os arquivos do bucket   |
-| GET    | `/files/:key`   | Baixa/visualiza um arquivo          |
-| DELETE | `/files/:key`   | Remove um arquivo                   |
-
-## Testando
-
-- **Postman/Insomnia**: para o upload, use `form-data` com o campo `file` do tipo "File".
-- **REST Client (VS Code)**: use o arquivo `requests.http` incluído no projeto (upload precisa ser feito via Postman/Insomnia por causa do multipart/form-data).
-
-## Estrutura do projeto
-
-```
-minio-api-project/
-├── docker-compose.yml     # Sobe o MinIO
-├── package.json
-├── .env.example
-├── requests.http          # Testes para REST Client
-└── src/
-    ├── server.js          # Ponto de entrada da API
-    ├── s3Client.js        # Configuração do cliente S3/MinIO
-    ├── ensureBucket.js     # Garante que o bucket existe
-    └── routes/
-        └── files.js       # Rotas de upload, listagem, download e delete
-```
+O MinIO fornece uma API compatível com o Amazon S3, permitindo que a aplicação utilize operações de armazenamento de objetos por meio do AWS SDK.

@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const ensureBucket = require("./ensureBucket");
 const filesRouter = require("./routes/files");
+const uploadRouter = require("./routes/upload");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,7 @@ app.get("/", (req, res) => {
   res.json({ status: "API rodando", docs: "Use /files para gerenciar arquivos" });
 });
 
+app.use("/upload", uploadRouter);
 app.use("/files", filesRouter);
 
 async function start() {
